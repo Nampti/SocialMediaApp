@@ -1,22 +1,29 @@
-import { StyleSheet, Text, View, Image, Pressable } from "react-native";
+import { StyleSheet, Text, View, Image, Pressable, ScrollView, TextInput } from "react-native";
 import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { UserType } from "../UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import "core-js/stable/atob";
+import { Entypo, AntDesign } from "@expo/vector-icons";
+import Carousel from "react-native-snap-carousel";
 const ProfileScreen = () => {
     const [user, setUser] = useState("");
     const navigation = useNavigation()
     const { userId, setUserId } = useContext(UserType);
+    const [option, setOption] = useState("Description");
+    const [description, setDescription] = useState("");
     useEffect(() => {
         const fetchProfile = async () => {
             try {
                 const response = await axios.get(
-                    `http://192.168.0.105:3000/profile/${userId}`
+                    `http://192.168.1.35:3000/profile/${userId}`
                 );
                 const { user } = response.data;
                 setUser(user);
+                if (user.description) {
+                    await AsyncStorage.setItem("userDescription", user.description);
+                }
             } catch (error) {
                 console.log("error", error);
             }
@@ -24,6 +31,33 @@ const ProfileScreen = () => {
 
         fetchProfile();
     });
+    useEffect(() => {
+        // Lấy mô tả từ AsyncStorage khi component được tải
+        const getDescriptionFromStorage = async () => {
+            const storedDescription = await AsyncStorage.getItem("userDescription");
+            setDescription(storedDescription || ""); // Nếu không có mô tả được lưu, sử dụng chuỗi trống
+        };
+
+        getDescriptionFromStorage();
+    }, []);
+    const updateUserDescription = async () => {
+        try {
+            const response = await axios.put(
+                `http://192.168.1.35:3000/profile/${userId}/description`,
+                {
+                    description: description,
+                }
+            );
+            console.log(response.data);
+
+            if (response.status === 200) {
+                Alert.alert("Success", "Description updated successfully");
+                await AsyncStorage.setItem("userDescription", description);
+            }
+        } catch (error) {
+            console.log("Error updating the user Description");
+        }
+    };
 
     const logout = () => {
         clearAuthToken();
@@ -34,8 +68,9 @@ const ProfileScreen = () => {
         navigation.replace("Login")
     }
 
+
     return (
-        <View style={{ marginTop: 55, padding: 15 }}>
+        <ScrollView style={{ marginTop: 55, padding: 15 }}>
             <View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <Text style={{ fontSize: 20, fontWeight: "bold" }}>{user?.name}</Text>
@@ -50,11 +85,11 @@ const ProfileScreen = () => {
                         <Text>Threads.net</Text>
                     </View>
                 </View>
-
                 <View
                     style={{
                         flexDirection: "row",
                         alignItems: "center",
+                        justifyContent: "space-between",
                         gap: 20,
                         marginTop: 15,
                     }}
@@ -72,46 +107,93 @@ const ProfileScreen = () => {
                             }}
                         />
                     </View>
-                </View>
-                <Text style={{ color: "gray", fontSize: 15, marginTop: 10 }}>
-                    {user?.followers?.length} followers
-                </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 20 }}>
-                    <Pressable
-                        style={{
-                            flex: 1,
-                            justifyContent: "center",
-                            alignItems: "center",
-                            padding: 10,
-                            borderColor: "#D0D0D0",
-                            borderWidth: 1,
-                            borderRadius: 5,
-                        }}
-                    >
-                        <Text>Edit Profile</Text>
-                    </Pressable>
+                    <View>
+                        <Pressable
+                            onPress={logout}
+                            style={{
+                                flex: 1,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                padding: 10,
+                                borderColor: "#D0D0D0",
+                                borderWidth: 1,
+                                borderRadius: 5,
+                            }}
+                        >
+                            <Text>Logout</Text>
+                        </Pressable>
 
-                    <Pressable
-                        onPress={logout}
-                        style={{
-                            flex: 1,
-                            justifyContent: "center",
-                            alignItems: "center",
-                            padding: 10,
-                            borderColor: "#D0D0D0",
-                            borderWidth: 1,
-                            borderRadius: 5,
-                        }}
-                    >
-                        <Text>Logout</Text>
+                    </View>
+                </View>
+                <View>
+                    <Text style={{ color: "gray", fontSize: 15, marginTop: 10 }}>
+                        {user?.followers?.length} followers
+                    </Text>
+                </View>
+                <View style={{ marginTop: 30, marginLeft: 15, flexDirection: "row", alignItems: "center", gap: 60 }}>
+                    <Pressable onPress={() => setOption("Description")}>
+                        <Text style={{ fontSize: 16, fontWeight: "500", color: option == "Description" ? "black" : "gray", }}>Description</Text>
                     </Pressable>
+                    <Pressable onPress={() => setOption("Photos")}>
+                        <Text style={{ fontSize: 16, fontWeight: "500", color: option == "Photos" ? "black" : "gray" }}>Photos</Text>
+                    </Pressable>
+                </View>
+                <View>
+                    <View style={{ marginHorizontal: 14, marginVertical: 15 }}>
+                        {option == "Description" && (
+                            <View
+                                style={{
+                                    borderColor: "#202020",
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    borderRadius: 10,
+                                    height: 300,
+                                }}
+                            >
+                                <TextInput
+                                    value={description}
+                                    multiline
+                                    onChangeText={(text) => setDescription(text)}
+                                    style={{
+
+                                        fontSize: description ? 17 : 17,
+                                    }}
+                                    placeholder="Write your description "
+                                //   placeholderTextColor={"black"}
+                                />
+                                <Pressable
+                                    onPress={updateUserDescription}
+                                    style={{
+                                        marginTop: "auto",
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        gap: 15,
+                                        backgroundColor: "black",
+                                        borderRadius: 5,
+                                        justifyContent: "center",
+                                        padding: 10,
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            color: "white",
+                                            textAlign: "center",
+                                            fontSize: 15,
+                                            fontWeight: "500",
+                                        }}
+                                    >
+                                        Update your description
+                                    </Text>
+
+                                </Pressable>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </View>
-        </View>
+        </ScrollView>
     );
 };
-
-
 export default ProfileScreen;
 
 const styles = StyleSheet.create({});
