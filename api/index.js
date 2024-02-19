@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 const jwt = require("jsonwebtoken");
 
 mongoose
-    .connect("mongodb+srv://nguyenhoainama3k55:05102002@namptit.agsgmjh.mongodb.net/")
+    .connect("mongodb+srv://nguyenhoainama3k55:1234@cluster0.jr0rbsy.mongodb.net/")
     .then(() => {
         console.log("Connected to MongoDB");
     })
@@ -28,6 +28,7 @@ app.listen(port, () => {
 
 const User = require("../api/models/user");
 const Post = require("../api/models/post");
+const Chat = require("./models/message");
 
 const sendVerificationEmail = async (email, verificationToken) => {
     const transporter = nodemailer.createTransport({
@@ -41,7 +42,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
         from: "threads.com",
         to: email,
         subject: "Email Verification",
-        text: `Please click the following link to verify your email http://192.168.0.105:3000/verify/${verificationToken}`,
+        text: `Please click the following link to verify your email http://192.168.1.35:3000/verify/${verificationToken}`,
     };
     try {
         await transporter.sendMail(mailOptions);
@@ -265,5 +266,29 @@ app.get("/profile/:userId", async (req, res) => {
         return res.status(200).json({ user });
     } catch (error) {
         res.status(500).json({ message: "Error while getting the profile" });
+    }
+});
+//endpoint to update the profile description
+app.put("/profile/:userId/description", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { description } = req.body;
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                description: description,
+            },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res
+            .status(200)
+            .json({ message: "User description updated succesfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error updating user description" });
     }
 });
