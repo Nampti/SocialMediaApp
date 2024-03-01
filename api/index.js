@@ -3,54 +3,58 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const User = require("../api/models/user");
+const Post = require("../api/models/post");
 
 const app = express();
 const port = 3000;
-const cors = require("cors");
 app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-const jwt = require("jsonwebtoken");
 
+// Connect to MongoDB
 mongoose
-    .connect("mongodb+srv://nguyenhoainama3k55:1234@cluster0.jr0rbsy.mongodb.net/")
+    .connect("mongodb+srv://nguyenhoainama3k55:1234@cluster0.lso4ppl.mongodb.net/")
     .then(() => {
         console.log("Connected to MongoDB");
     })
     .catch((err) => {
-        console.log("Error Connecting to MongoDB", err); // Log the error for debugging
+        console.log("Error Connecting to MongoDB", err);
     });
 
+// Start the server
 app.listen(port, () => {
     console.log("Server is running on port 3000");
 });
 
-const User = require("../api/models/user");
-const Post = require("../api/models/post");
-const Chat = require("./models/message");
+// Models
 
+// Send verification email
 const sendVerificationEmail = async (email, verificationToken) => {
     const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
             user: "nguyenhoainama3k55@gmail.com",
             pass: "rmjv hmqh slth rhrh",
-        }
+        },
     });
     const mailOptions = {
         from: "threads.com",
         to: email,
         subject: "Email Verification",
-        text: `Please click the following link to verify your email http://192.168.1.35:3000/verify/${verificationToken}`,
+        text: `Please click the following link to verify your email http://192.168.1.204:3000/verify/${verificationToken}`,
     };
     try {
         await transporter.sendMail(mailOptions);
     } catch (error) {
-        console.log("Error sending email", error); // Log the error for debugging
+        console.log("Error sending email", error);
     }
 };
 
+// Register a new user
 app.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -69,11 +73,12 @@ app.post("/register", async (req, res) => {
 
         res.status(200).json({ message: "Registration successful" });
     } catch (error) {
-        console.log("Error registering user", error); // Log the error for debugging
+        console.log("Error registering user", error);
         res.status(500).json({ message: "Error registering user" });
     }
 });
 
+// Verify email
 app.get("/verify/:token", async (req, res) => {
     try {
         const token = req.params.token;
@@ -89,17 +94,19 @@ app.get("/verify/:token", async (req, res) => {
 
         res.status(200).json({ message: "Email verified successfully" });
     } catch (error) {
-        console.log("Error getting token", error); // Log the error for debugging
+        console.log("Error getting token", error);
         res.status(500).json({ message: "Email verification failed" });
     }
 });
 
+// Generate secret key
 const generateSecretKey = () => {
     return crypto.randomBytes(32).toString("hex");
 };
 
 const secretKey = generateSecretKey();
 
+// Login
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -116,23 +123,23 @@ app.post("/login", async (req, res) => {
         const token = jwt.sign({ userId: user._id }, secretKey);
         res.status(200).json({ token });
     } catch (error) {
-        console.log("Login failed", error); // Log the error for debugging
+        console.log("Login failed", error);
         res.status(500).json({ message: "Login failed" });
     }
 });
 
-app.get("/user/:userId", async (req, res) => {
+// Get all users
+app.get("/users", async (req, res) => {
     try {
-        const loggedInUserId = req.params.userId;
-
-        const users = await User.find({ _id: { $ne: loggedInUserId } });
+        const users = await User.find();
         res.status(200).json(users);
     } catch (error) {
-        console.log("Error getting the users", error); // Log the error for debugging
+        console.log("Error getting the users", error);
         res.status(500).json({ message: "Error getting the users" });
     }
 });
-//endpoint to follow a particular user
+
+// Follow a user
 app.post("/follow", async (req, res) => {
     const { currentUserId, selectedUserId } = req.body;
 
@@ -144,11 +151,12 @@ app.post("/follow", async (req, res) => {
         res.sendStatus(200);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: "error in following a user" });
+        res.status(500).json({ message: "Error following a user" });
     }
 });
-//endpoint to unfollow a user
-app.post("/users/unfollow", async (req, res) => {
+
+// Unfollow a user
+app.post("/unfollow", async (req, res) => {
     const { loggedInUserId, targetUserId } = req.body;
 
     try {
@@ -161,7 +169,8 @@ app.post("/users/unfollow", async (req, res) => {
         res.status(500).json({ message: "Error unfollowing user" });
     }
 });
-//endpoint to create a new post 
+
+// Create a new post
 app.post("/create-post", async (req, res) => {
     try {
         const { content, userId } = req.body;
@@ -180,21 +189,22 @@ app.post("/create-post", async (req, res) => {
 
         res.status(200).json({ message: "Post saved successfully" });
     } catch (error) {
-        res.status(500).json({ message: "post creation failed" });
+        res.status(500).json({ message: "Post creation failed" });
     }
 });
-//endpoint for liking a particular post
+
+// Like a post
 app.put("/posts/:postId/:userId/like", async (req, res) => {
     const postId = req.params.postId;
-    const userId = req.params.userId; // Assuming you have a way to get the logged-in user's ID
+    const userId = req.params.userId;
 
     try {
         const post = await Post.findById(postId).populate("user", "name");
 
         const updatedPost = await Post.findByIdAndUpdate(
             postId,
-            { $addToSet: { likes: userId } }, // Add user's ID to the likes array
-            { new: true } // To return the updated post
+            { $addToSet: { likes: userId } },
+            { new: true }
         );
 
         if (!updatedPost) {
@@ -210,7 +220,8 @@ app.put("/posts/:postId/:userId/like", async (req, res) => {
             .json({ message: "An error occurred while liking the post" });
     }
 });
-//endpoint to unlike a post
+
+// Unlike a post
 app.put("/posts/:postId/:userId/unlike", async (req, res) => {
     const postId = req.params.postId;
     const userId = req.params.userId;
@@ -238,8 +249,9 @@ app.put("/posts/:postId/:userId/unlike", async (req, res) => {
             .json({ message: "An error occurred while unliking the post" });
     }
 });
-//endpoint to get all the posts
-app.get("/get-posts", async (req, res) => {
+
+// Get all posts
+app.get("/posts", async (req, res) => {
     try {
         const posts = await Post.find()
             .populate("user", "name")
@@ -252,7 +264,8 @@ app.get("/get-posts", async (req, res) => {
             .json({ message: "An error occurred while getting the posts" });
     }
 });
-//endpoint to get profile
+
+// Get user profile
 app.get("/profile/:userId", async (req, res) => {
     try {
         const userId = req.params.userId;
@@ -268,7 +281,8 @@ app.get("/profile/:userId", async (req, res) => {
         res.status(500).json({ message: "Error while getting the profile" });
     }
 });
-//endpoint to update the profile description
+
+// Update user description
 app.put("/profile/:userId/description", async (req, res) => {
     try {
         const { userId } = req.params;
@@ -287,7 +301,7 @@ app.put("/profile/:userId/description", async (req, res) => {
         }
         return res
             .status(200)
-            .json({ message: "User description updated succesfully" });
+            .json({ message: "User description updated successfully" });
     } catch (error) {
         res.status(500).json({ message: "Error updating user description" });
     }

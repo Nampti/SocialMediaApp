@@ -15,35 +15,25 @@ const ProfileScreen = () => {
     const [description, setDescription] = useState("");
     useEffect(() => {
         const fetchProfile = async () => {
-            try {
-                const response = await axios.get(
-                    `http://192.168.1.35:3000/profile/${userId}`
-                );
-                const { user } = response.data;
-                setUser(user);
-                if (user.description) {
-                    await AsyncStorage.setItem("userDescription", user.description);
-                }
-            } catch (error) {
-                console.log("error", error);
-            }
+          try {
+            const response = await axios.get(
+              `http://192.168.1.204:3000/profile/${userId}`
+            );
+            const { user } = response.data;
+            setUser(user);
+           
+          } catch (error) {
+            console.log("error", error);
+          }
         };
-
+    
         fetchProfile();
-    });
-    useEffect(() => {
-        // Lấy mô tả từ AsyncStorage khi component được tải
-        const getDescriptionFromStorage = async () => {
-            const storedDescription = await AsyncStorage.getItem("userDescription");
-            setDescription(storedDescription || ""); // Nếu không có mô tả được lưu, sử dụng chuỗi trống
-        };
-
-        getDescriptionFromStorage();
-    }, []);
+      });
+      
     const updateUserDescription = async () => {
         try {
             const response = await axios.put(
-                `http://192.168.1.35:3000/profile/${userId}/description`,
+                `http://192.168.1.204:3000/profile/${userId}/description`,
                 {
                     description: description,
                 }
@@ -52,7 +42,6 @@ const ProfileScreen = () => {
 
             if (response.status === 200) {
                 Alert.alert("Success", "Description updated successfully");
-                await AsyncStorage.setItem("userDescription", description);
             }
         } catch (error) {
             console.log("Error updating the user Description");
@@ -74,6 +63,7 @@ const ProfileScreen = () => {
             <View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <Text style={{ fontSize: 20, fontWeight: "bold" }}>{user?.name}</Text>
+                    <Text>{user.description}</Text>
                     <View
                         style={{
                             paddingHorizontal: 7,

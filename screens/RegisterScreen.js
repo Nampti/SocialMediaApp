@@ -29,7 +29,7 @@ const RegisterScreen = () => {
         };
 
         axios
-            .post("http://192.168.0.105:3000/register", user, {
+            .post("http://192.168.1.204:3000/register", user, {
                 responseType: 'text'
             })
             .then((response) => {

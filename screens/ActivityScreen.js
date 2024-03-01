@@ -11,8 +11,7 @@ const ActivityScreen = () => {
     const [selectedButton, setSelectedButton] = useState("people");
     const [users, setUsers] = useState([]);
     const { userId, setUserId } = useContext(UserType);
-
-
+    
     const handleButtonClick = (buttonName) => {
         setSelectedButton(buttonName);
     };
@@ -25,7 +24,7 @@ const ActivityScreen = () => {
                     const decodedToken = jwtDecode(token);
                     const userId = decodedToken.userId;
                     setUserId(userId);
-                    const response = await axios.get(`http://192.168.0.105:3000/user/${userId}`);
+                    const response = await axios.get(`http://192.168.1.204:3000/user/${userId}`);
                     setUsers(response.data);
                 }
             } catch (error) {

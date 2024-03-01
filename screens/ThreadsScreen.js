@@ -14,7 +14,7 @@ const ThreadsScreen = () => {
         const fetchProfile = async () => {
             try {
                 const response = await axios.get(
-                    `http://192.168.0.105:3000/profile/${userId}`
+                    `http://192.168.1.204:3000/profile/${userId}`
                 );
                 const { user } = response.data;
                 setUser(user);
@@ -35,7 +35,7 @@ const ThreadsScreen = () => {
         }
 
         axios
-            .post("http://192.168.0.105:3000/create-post", postData)
+            .post("http://192.168.1.204:3000/create-post", postData)
             .then((response) => {
                 setContent("");
             })
